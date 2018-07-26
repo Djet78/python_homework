@@ -36,7 +36,7 @@ def longest_binary_gap(integer):
     :param integer: any 'int' value
     :return: 'int'. Length of longest binary gap. '0' if haven`t gaps
     """
-    if type(integer) is not int:
+    if not isinstance(integer, int):
         raise TypeError("Only 'int' value allowed!")
     binary_repr = bin(integer)
     binary_gaps = re.findall(r"(?<=1)0+(?=1)", binary_repr)
@@ -89,12 +89,12 @@ def count_natural_divisors_1(integer):
     :param integer: positive 'int' value
     :return:'int'. Quantity of natural divisors of 'integer'
     """
-    if type(integer) is not int:
+    if not isinstance(integer, int):
         raise TypeError("Only 'int' value allowed!")
     if integer < 1:
         raise ValueError("Only positive numbers allowed!")
     divisors = 1
-    for number in range(1, int(integer / 2) + 1):
+    for number in range(1, (integer // 2) + 1):
         if integer % number == 0:
             divisors += 1
     return divisors
@@ -119,7 +119,7 @@ def longest_correct_pass(string):
         there should be an odd number of digits.
     :return: 'int'. Length of longest suitable password, or -1 if any does not suit
     """
-    if type(string) is not str:
+    if not isinstance(string, str):
         raise ValueError("Only strings allowed!")
     passes = string.split()
     for pas in sorted(passes, key=len, reverse=True):
@@ -142,9 +142,31 @@ def longest_correct_pass(string):
 assert longest_correct_pass("test 5 a0A pass007 ?xy1") == 7
 assert longest_correct_pass("1233asd --- 1as&") == -1
 
-
 # ------------------- Task 6 ----------------------
 
 
 def is_nested(string):
-    pass
+    string = string.lstrip(")")
+    string = string.rstrip("(")
+    if 0 <= len(string) <= 3:
+        return 0
+    previous_bracket_idx = 1
+    for bracket in string[2:-1]:
+        if bracket == ")" and string[previous_bracket_idx] == "(":
+            return 1
+        previous_bracket_idx += 1
+    return 0
+
+
+assert is_nested("") == 0
+assert is_nested("))))") == 0
+assert is_nested("(((((") == 0
+assert is_nested("))))((((") == 0
+assert is_nested("(()") == 0
+assert is_nested("))))))))())") == 0
+assert is_nested("()))") == 0
+assert is_nested("((()") == 0
+assert is_nested("((()))") == 1
+assert is_nested("(())") == 1
+assert is_nested("(((((((())") == 1
+assert is_nested("()()()") == 1
