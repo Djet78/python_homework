@@ -108,11 +108,11 @@ class JSONHandler:
         """
         cls._check_file_format(path)
         try:
-            handle = open(path)
+            with open(path) as _:
+                pass
         except FileNotFoundError as why:
             cls.jsonh_logger.error("FileNotFoundError: {}".format(why))
             raise FileNotFoundError("{}".format(why))
-        handle.close()
 
     @classmethod
     def _check_data_in_file(cls, data):
@@ -147,7 +147,7 @@ class JSONHandler:
                 handle.write(json_data)
         except PermissionError as why:
             cls.jsonh_logger.error("Exception: {}".format(why))
-            raise PermissionError("Wrong path: {}".format(why))
+            raise PermissionError("{}".format(why))
 
     # 2.2)
     @classmethod
@@ -302,11 +302,11 @@ class YAMLHandler:
         """
         self._check_file_format(path)
         try:
-            handle = open(path)
+            with open(path) as _:
+                pass
         except FileNotFoundError as why:
             self.yamlh_logger.error("FileNotFoundError: {}".format(why))
             raise FileNotFoundError("{}".format(why))
-        handle.close()
 
     def read(self, path):
         """
@@ -331,4 +331,176 @@ class YAMLHandler:
                 handle.write(data)
         except PermissionError as why:
             self.yamlh_logger.error("Exception: {}".format(why))
-            raise PermissionError("Wrong path: {}".format(why))
+            raise PermissionError("{}".format(why))
+
+# ------------------- Task 5 ----------------------
+
+
+class Time:
+
+    _time_logger = create_logger(level=30, filename="log.txt", filemode="w")
+
+    def __init__(self):
+        self._time = {"s": 0, "m": 0, "h": 0}
+
+    def _value2int(self, value):
+        try:
+            value = int(value)
+        except Exception as why:
+            self._time_logger.error("Exception: {}".format(why))
+            raise Exception("{}".format(why))
+        return value
+
+    def _check_value(self, value, lower_bound, higher_bound):
+        if not lower_bound <= value <= higher_bound:
+            self._time_logger.error("ValueError: Wrong value for this instance! only int`s in range {} - {} allow".
+                                    format(lower_bound, higher_bound))
+            raise ValueError("Wrong value for this instance! only int`s in range {} - {} allow".format(lower_bound,
+                                                                                                       higher_bound))
+
+    def set_seconds(self, new_value):
+        """
+        Change value of seconds
+
+        :param new_value: 'int' from 0 to 59 range
+        """
+
+        int_value = self._value2int(new_value)
+        self._check_value(int_value, 0, 59)
+        self._time["s"] = int_value
+
+    def set_minutes(self, new_value):
+        """
+        Change value of minutes
+
+        :param new_value: 'int' from 0 to 59 range
+        """
+
+        int_value = self._value2int(new_value)
+        self._check_value(int_value, 0, 59)
+        self._time["m"] = int_value
+
+    def set_hours(self, new_value):
+        """
+        Change value of minutes
+
+        :param new_value: 'int' from 0 to 23 range
+        """
+
+        int_value = self._value2int(new_value)
+        self._check_value(int_value, 0, 23)
+        self._time["h"] = int_value
+
+    def set_time(self, hours, minutes, seconds):
+        self.set_minutes(minutes)
+        self.set_seconds(seconds)
+        self.set_hours(hours)
+
+    def show_time(self):
+        return ("'{0}h:{1}m:{2}s'".format(self._time["h"], self._time["m"], self._time["s"]))
+
+    def change_time(self, hours, minutes, seconds, add=True):
+        tmp_time_dict = {"h": self._value2int(hours), "m": self._value2int(minutes), "s": self._value2int(seconds)}
+
+        if add:
+            new_seconds_value = tmp_time_dict["s"] + self._time["s"]
+            tmp_time_dict["m"] += new_seconds_value // 60
+
+            new_minutes_value = tmp_time_dict["m"] + self._time["m"]
+            tmp_time_dict["h"] += new_minutes_value // 60
+
+            self._time["h"] = (tmp_time_dict["h"] + self._time["h"]) % 24
+
+        else:
+            new_seconds_value = self._time["s"] - tmp_time_dict["s"]
+            tmp_time_dict["m"] -= new_seconds_value // 60
+
+            new_minutes_value = self._time["m"] - tmp_time_dict["m"]
+            tmp_time_dict["h"] -= new_minutes_value // 60
+
+            self._time["h"] = (self._time["h"] - tmp_time_dict["h"]) % 24
+
+        self._time["s"] = new_seconds_value % 60
+        self._time["m"] = new_minutes_value % 60
+
+
+# ------------------- Task 6 ----------------------
+
+class Student:
+
+    _all_students = {}
+
+    def __init__(self, surname_initials, group_no):
+        self.name = surname_initials
+        self.group = str(group_no)
+        self.marks = [0] * 5
+
+        if self.name in self._all_students:
+            raise NameError("We already have student with this name")
+        self._all_students.update({self.name: {"group": self.group, "marks": self.marks}})
+
+    def set_mark(self, task, mark):
+        if not 0 < task <= 5:
+            raise ValueError("No tasks with this number!")
+        self.marks[task - 1] = mark
+
+    def get_mark(self, task):
+        if not 0 < task <= 5:
+            raise ValueError("No tasks with this number!")
+        return self.marks[task - 1]
+
+    @classmethod
+    def get_all_students(cls):
+        return cls._all_students
+
+    @classmethod
+    def get_students_by_average_mark(cls):
+        return sorted(cls._all_students.items(), key=lambda x: sum(x[1]["marks"]) / 2)
+
+    @classmethod
+    def get_excellent_students(cls):
+        students = {}
+        for k, v in cls._all_students.items():
+            bad_marks = [0, 1, 2, 3]
+            student_marks = set(v["marks"])
+            if student_marks.intersection(bad_marks):
+                continue
+            else:
+                students.update({k: v["group"]})
+        return students
+
+
+# ------------------- Sandbox for 6 task ----------------------
+
+st = Student("Vasya", 1)
+st.set_mark(1, 5)
+st.set_mark(2, 4)
+st.set_mark(3, 5)
+st.set_mark(4, 5)
+st.set_mark(5, 5)
+
+st2 = Student("Petya", 2)
+st2.set_mark(1, 4)
+
+st3 = Student("Valentin", 2)
+st3.set_mark(1, 2)
+st3.set_mark(2, 3)
+
+st4 = Student("Katya", 2)
+st4.set_mark(1, 5)
+st4.set_mark(2, 5)
+st4.set_mark(3, 5)
+
+st5 = Student("Ignat", 3)
+st5.set_mark(5, 2)
+
+st6 = Student("Kurulo", 1)
+st6.set_mark(1, 5)
+st6.set_mark(2, 4)
+st6.set_mark(3, 5)
+st6.set_mark(4, 5)
+st6.set_mark(5, 1)
+
+print(Student.get_all_students())
+print(Student.get_students_by_average_mark())
+print(Student.get_excellent_students())
