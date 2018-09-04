@@ -4,11 +4,11 @@ from contextlib import contextmanager
 # ------------------- Task 1 ----------------------
 
 
-def generate_from_nested(nested_list):
-    for elem in nested_list:
+def generate_items_from_nested(nested_iterable):
+    for elem in nested_iterable:
         check_nest = getattr(elem, "__iter__", False)
         if check_nest:
-            for nest in generate_from_nested(elem):
+            for nest in generate_items_from_nested(elem):
                 yield nest
         else:
             yield elem
