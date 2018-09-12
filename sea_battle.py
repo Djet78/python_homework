@@ -1,20 +1,34 @@
 from random import randint
 from copy import deepcopy
+from time import sleep
 
 
 class SeaBattle:
 
     limited_shots_mode = False
-    in_game = False
+
+    class Player:
+
+        __slots__ = ("name", "battle_field", "user_field", "ships")
+
+        def __init__(self, battle_field, user_field, amount_of_ships):
+            self.name = input("   Enter your name: ")
+            self.battle_field = battle_field
+            self.user_field = user_field
+            self.ships = amount_of_ships
+
+    # --------------------------------------------------------------
+    # ------------------------- Setters ----------------------------
+    # --------------------------------------------------------------
 
     def _user_input_handler(self, lower_bound, higher_bound, message=""):
-        in_game_commands = {"Q": self._quit, "H": self._help}
+        process_commands = {"Q": self._quit, "H": self._help}
         while True:
             uinput = input("    Enter{}: ".format(message)).upper()
             print()
             try:
-                if self.in_game and uinput in in_game_commands:
-                    in_game_commands[uinput]()
+                if uinput in process_commands:
+                    process_commands[uinput]()
                     continue
                 if lower_bound <= int(uinput) <= higher_bound:
                     break
@@ -37,86 +51,160 @@ class SeaBattle:
         return horizontal, vertical
 
     def _set_ship_amount(self, amount_of_tiles):
-        print("Write amount of ships.")
-        print("There can be no less than 1, and no more then {}!".format(amount_of_tiles - 1))
+        max_ship_amount = int(amount_of_tiles * 0.3)
+        print("Write amount of the ships decks.")
+        print("There can be no less than 1, and no more than {}!".format(max_ship_amount))
         print()
-        ships_amount = self._user_input_handler(1, amount_of_tiles - 1, " ships quantity")
+        ships_amount = self._user_input_handler(1, max_ship_amount, " ships quantity")
         print("\n" * 10)
         return ships_amount
 
     def _set_shots(self, ships_amount, amount_of_tiles):
-        print("Amount of shots can`t be less than ships amount: {}, and bigger then tiles amount: {}!"
+        print("Amount of shots can`t be less than ships amount: {}, and bigger than tiles amount: {}!"
               .format(ships_amount, amount_of_tiles))
         shots = self._user_input_handler(ships_amount, amount_of_tiles, " shots amount")
         print("\n" * 10)
         return shots
 
+    # --------------------------------------------------------------
+    # ---------------------- Game builders -------------------------
+    # --------------------------------------------------------------
+
     def _generate_empty_field(self, horizontal, vertical):
-        field = [["0" for _ in range(horizontal + 1)]for _ in range(vertical + 1)]
-        field[0] = [str(int(x) + i) for i, x in enumerate(field[0])]
-        for idx in range(len(field)):
-            field[idx][0] = str(int(field[idx][0]) + idx)
-        field[0][0] = "*"
-        return field
+        return [["0" for _ in range(vertical)]for _ in range(horizontal)]
 
     def _add_ships_on_field(self, ships, field):
+        not_allowed_coordinates = ((-1, -1), (-1, 1), (1, 1), (1, -1))
         while ships:
-            for hor, row in enumerate(field):
-                if hor == 0:
-                    continue
-                for ver, cell in enumerate(row):
-                    if ships == 0:
+            go_to_while = False
+            hor, ver, = randint(0, len(field) - 1), randint(0, len(field[0]) - 1)
+            if ships == 0:
+                break
+            if field[hor][ver] == "1":
+                continue
+            for x, y in not_allowed_coordinates:
+                try:
+                    if field[hor + x][ver + y] == "1":
+                        go_to_while = True
                         break
-                    if cell == "0" and randint(0, 100) > 60:
-                        ships -= 1
-                        field[hor][ver] = "1"
+                except IndexError:
+                    pass
+            if go_to_while:
+                continue
+            ships -= 1
+            field[hor][ver] = "1"
         return field
 
-    def _set_game_options(self):
+    def _limited_shots_mode_trigger(self):
+        self.limited_shots_mode = True
+        self._build_solo_game()
+
+    def _build_solo_game(self):
         horizontal, vertical = self._set_field_params()
-        amount_of_tiles = horizontal * vertical
-        ships_amount = self._set_ship_amount(amount_of_tiles)
+        ships_amount = self._set_ship_amount(horizontal * vertical)
         user_field = self._generate_empty_field(horizontal, vertical)
         battle_field = self._add_ships_on_field(ships_amount, deepcopy(user_field))
         shots = None
         if self.limited_shots_mode:
-            shots = self._set_shots(ships_amount, amount_of_tiles)
-        self._game_process(battle_field, user_field, ships_amount, shots)
+            shots = self._set_shots(ships_amount, horizontal * vertical)
+        self._run_solo_game(battle_field, user_field, ships_amount, shots)
 
-    def _limited_shots_mode_trigger(self):
-        self.limited_shots_mode = True
-        self._set_game_options()
+    def _build_versus_game(self):
+        horizontal, vertical = self._set_field_params()
+        ships_amount = self._set_ship_amount(horizontal * vertical)
+        user_field_1 = self._generate_empty_field(horizontal, vertical)
+        battle_field_1 = self._add_ships_on_field(ships_amount, deepcopy(user_field_1))
+        user_field_2 = deepcopy(user_field_1)
+        battle_field_2 = self._add_ships_on_field(ships_amount, deepcopy(user_field_2))
+        print("Player 1")
+        p_1 = self.Player(battle_field_1, user_field_1, ships_amount)
+        print("Player 2")
+        p_2 = self.Player(battle_field_2, user_field_2, ships_amount)
+        print("\n" * 3)
+        self._run_versus_game(p_1, p_2)
 
-    def _game_process(self, battle_field, user_field, ships_amount, shots):
-        self.in_game = True
-        max_hor_value = len(user_field) - 1
-        max_ver_value = len(user_field[0]) - 1
+    # --------------------------------------------------------------
+    # ----------------------- Game process -------------------------
+    # --------------------------------------------------------------
+
+    def _print_game_field(self, user_field, shots):
+        print()
+        if shots:
+            print("Shots: {}".format(shots))
+        print([str(x) for x in range(len(user_field[0]) + 1)])
+        for i, line in enumerate(user_field, start=1):
+            print(list(str(i)), line, sep="")
+        print()
+
+    def _get_shoot(self, max_hor_value, max_ver_value):
+        print("Shot to:")
+        hor = self._user_input_handler(1, max_hor_value, " horizontal") - 1
+        ver = self._user_input_handler(1, max_ver_value, " vertical") - 1
+        return hor, ver
+
+    def _handle_shoot(self, hor, ver, battle_field, user_field):
+        if battle_field[hor][ver] == "0":
+            user_field[hor][ver] = "~"
+        else:
+            if user_field[hor][ver] != "X":
+                user_field[hor][ver] = "X"
+                return True
+        return False
+
+    def _max_shoot_values(self, field):
+        hor = len(field)
+        ver = len(field[0])
+        return hor, ver
+
+    def _run_solo_game(self, battle_field, user_field, ships_amount, shots):
+        max_hor_value, max_ver_value = self._max_shoot_values(user_field)
         if shots is None:
             shots = "Unlimited"
+        print("Type 'h' for help, or 'q' for quit")
+        print("\n" * 3)
         while ships_amount and shots:
-            print("Type 'h' for help, or 'q' for quit")
-            print("\n" * 3)
-            print("Shots: {}".format(shots))
-            for line in user_field:
-                print(line)
-            print()
-            print("Shot to:")
-            hor = self._user_input_handler(1, max_hor_value, " horizontal")
-            ver = self._user_input_handler(1, max_ver_value, " vertical")
-            if battle_field[hor][ver] == "0":
-                user_field[hor][ver] = "~"
-            else:
-                if user_field[hor][ver] != "X":
-                    ships_amount -= 1
-                    user_field[hor][ver] = "X"
+            self._print_game_field(user_field, shots)
+            hor, ver = self._get_shoot(max_hor_value, max_ver_value)
+            if self._handle_shoot(hor, ver, battle_field, user_field):
+                ships_amount -= 1
             if isinstance(shots, int):
                 shots -= 1
         print("\n" * 10)
-        if ships_amount == 0:
+        if not ships_amount:
             print("    Win! You have destroyed last ship!")
         else:
             print("    Sorry, you lose! You have no more shots!")
-        print("\n" * 5)
+        sleep(3)
+        print("\n" * 10)
+
+    def _run_versus_game(self, player_1, player_2):
+        max_hor_value, max_ver_value = self._max_shoot_values(player_1.user_field)
+        print("Type 'h' for help, or 'q' for quit")
+        print("\n" * 3)
+        while player_1.ships and player_2.ships:
+            for player in (player_1, player_2):
+                if not player_1.ships or not player_2.ships:
+                    break
+                print("{} turn.".format(player.name))
+                self._print_game_field(player.user_field, None)
+                while self._handle_shoot(*self._get_shoot(max_hor_value, max_ver_value),
+                                         player.battle_field, player.user_field):
+                    print("        Got!")
+                    print()
+                    player.ships -= 1
+                    if player.ships == 0:
+                        print("{} Winner!!!".format(player.name))
+                        break
+                    print("    Shoot one more time!")
+                    self._print_game_field(player.user_field, None)
+                print("        Miss!")
+        del player_1, player_2
+        sleep(3)
+        print("\n" * 10)
+
+    # --------------------------------------------------------------
+    # -------------------------- Menus ------------------------------
+    # --------------------------------------------------------------
 
     def _help(self):
         print()
@@ -135,14 +223,15 @@ class SeaBattle:
 
     def main_menu(self):
         self.limited_shots_mode = False
-        self.in_game = False
-        menu_triggers = {"Q": self._quit, "S": self._set_game_options,
+        menu_triggers = {"Q": self._quit, "S": self._build_solo_game, "V": self._build_versus_game,
                          "L": self._limited_shots_mode_trigger}
         while True:
+            print("        Welcome to sea battle!")
             print()
             print("Type: For:")
             print("    S: Standard mode")
             print("    L: Limited shots mode")
+            print("    V: Versus other player")
             print()
             print("    Q: Quit")
             print()
@@ -157,5 +246,4 @@ class SeaBattle:
 
 if __name__ == "__main__":
     sb = SeaBattle()
-    print("        Welcome to sea battle!")
     sb.main_menu()
