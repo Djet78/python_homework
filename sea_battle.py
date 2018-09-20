@@ -9,8 +9,6 @@ class SeaBattle:
 
     class Player:
 
-        __slots__ = ("name", "battle_field", "user_field", "ships")
-
         def __init__(self, battle_field, user_field, amount_of_ships):
             self.name = input("   Enter your name: ")
             self.battle_field = battle_field
@@ -71,28 +69,28 @@ class SeaBattle:
     # --------------------------------------------------------------
 
     def _generate_empty_field(self, horizontal, vertical):
-        return [["0" for _ in range(vertical)]for _ in range(horizontal)]
+        return [["0" for _ in range(horizontal)]for _ in range(vertical)]
 
     def _add_ships_on_field(self, ships, field):
         not_allowed_coordinates = ((-1, -1), (-1, 1), (1, 1), (1, -1))
         while ships:
-            go_to_while = False
+            continue_ = False
             hor, ver, = randint(0, len(field) - 1), randint(0, len(field[0]) - 1)
             if ships == 0:
                 break
-            if field[hor][ver] == "1":
+            if field[ver][hor] == "1":
                 continue
             for x, y in not_allowed_coordinates:
                 try:
-                    if field[hor + x][ver + y] == "1":
-                        go_to_while = True
+                    if field[ver + x][hor + y] == "1":
+                        continue_ = True
                         break
                 except IndexError:
                     pass
-            if go_to_while:
+            if continue_:
                 continue
             ships -= 1
-            field[hor][ver] = "1"
+            field[ver][hor] = "1"
         return field
 
     def _limited_shots_mode_trigger(self):
@@ -143,17 +141,17 @@ class SeaBattle:
         return hor, ver
 
     def _handle_shoot(self, hor, ver, battle_field, user_field):
-        if battle_field[hor][ver] == "0":
-            user_field[hor][ver] = "~"
+        if battle_field[ver][hor] == "0":
+            user_field[ver][hor] = "~"
         else:
-            if user_field[hor][ver] != "X":
-                user_field[hor][ver] = "X"
+            if user_field[ver][hor] != "X":
+                user_field[ver][hor] = "X"
                 return True
         return False
 
     def _max_shoot_values(self, field):
-        hor = len(field)
-        ver = len(field[0])
+        hor = len(field[0])
+        ver = len(field)
         return hor, ver
 
     def _run_solo_game(self, battle_field, user_field, ships_amount, shots):
@@ -185,7 +183,7 @@ class SeaBattle:
             for player in (player_1, player_2):
                 if not player_1.ships or not player_2.ships:
                     break
-                print("{} turn.".format(player.name))
+                print("{}'s turn.".format(player.name))
                 self._print_game_field(player.user_field, None)
                 while self._handle_shoot(*self._get_shoot(max_hor_value, max_ver_value),
                                          player.battle_field, player.user_field):
@@ -198,12 +196,13 @@ class SeaBattle:
                     print("    Shoot one more time!")
                     self._print_game_field(player.user_field, None)
                 print("        Miss!")
+                print()
         del player_1, player_2
         sleep(3)
         print("\n" * 10)
 
     # --------------------------------------------------------------
-    # -------------------------- Menus ------------------------------
+    # -------------------------- Menus -----------------------------
     # --------------------------------------------------------------
 
     def _help(self):
