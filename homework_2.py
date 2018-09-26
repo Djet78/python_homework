@@ -1,5 +1,6 @@
-# ------------------- Task 1 ----------------------
+import re
 
+# ------------------- Task 1 ----------------------
 
 def not_occur_number_in(iterable):
     """
@@ -18,15 +19,7 @@ def not_occur_number_in(iterable):
             return elem + 1
     return iterable[-1] + 1
 
-
-assert not_occur_number_in([1, 2, 3, 4, 7, 6]) == 5
-assert not_occur_number_in([1, 2, 3]) == 4
-assert not_occur_number_in([-1, -3]) == 1
-assert not_occur_number_in([]) == 1
-assert not_occur_number_in([1]) == 2
-
 # ------------------- Task 2 ----------------------
-import re
 
 
 def longest_binary_gap(integer):
@@ -45,14 +38,6 @@ def longest_binary_gap(integer):
     binary_gaps.sort(reverse=True)
     return len(binary_gaps[0])
 
-
-assert longest_binary_gap(9) == 2
-assert longest_binary_gap(1041) == 5
-assert longest_binary_gap(20) == 1
-assert longest_binary_gap(15) == 0
-assert longest_binary_gap(32) == 0
-
-
 # ------------------- Task 3 ----------------------
 
 
@@ -63,21 +48,35 @@ def shift_array(array, shift):
     :param array: list or tuple of values
     :param shift: 'int' value
     :return: 'list'. Shifted list
+
+    >>> shift_array([1, 2, 3, 4], 4)
+    [1, 2, 3, 4]
+    >>> shift_array([1, 2, 3], -1)
+    [2, 3, 1]
+    >>> shift_array([3, 8, 9, 7, 6], 3)
+    [9, 7, 6, 3, 8]
+    >>> shift_array([3, 8, 9, 7, 6], 0)
+    [3, 8, 9, 7, 6]
+    >>> shift_array(["a", "b", "c"], 1)
+    ['c', 'a', 'b']
+    >>> shift_array(22, 1)
+    Traceback (most recent call last):
+        ...
+    TypeError: Object is not iterable, can`t make rotations
+    >>> shift_array([1, 2, 3], "")
+    Traceback (most recent call last):
+        ...
+    TypeError: Only int allow
     """
+    if not hasattr(array, "__iter__"):
+        raise TypeError("Object is not iterable, can`t make rotations")
+    if not isinstance(shift, int):
+        raise TypeError("Only int allow")
     shifted = [0]*len(array)
     for idx, elem in enumerate(array):
         new_idx = (idx + shift) % len(array)
         shifted[new_idx] = elem
     return shifted
-
-
-assert shift_array([1, 2, 3, 4], 4) == [1, 2, 3, 4]
-assert shift_array([1, 2, 3], -1) == [2, 3, 1]
-assert shift_array([3, 8, 9, 7, 6], 3) == [9, 7, 6, 3, 8]
-assert shift_array([3, 8, 9, 7, 6], 1) == [6, 3, 8, 9, 7]
-assert shift_array([1, 2, 3, 4], 0) == [1, 2, 3, 4]
-assert shift_array(["a", "b", "c"], 1) == ["c", "a", "b"]
-
 
 # ------------------- Task 4 ----------------------
 
@@ -100,12 +99,6 @@ def count_natural_divisors_1(integer):
     return divisors
 
 
-assert count_natural_divisors_1(1) == 1
-assert count_natural_divisors_1(24) == 8
-assert count_natural_divisors_1(9) == 3
-assert count_natural_divisors_1(7) == 2
-
-
 # ------------------- Task 5 ----------------------
 
 
@@ -120,7 +113,7 @@ def longest_correct_pass(string):
     :return: 'int'. Length of longest suitable password, or -1 if any does not suit
     """
     if not isinstance(string, str):
-        raise ValueError("Only strings allowed!")
+        raise TypeError("Only strings allowed!")
     passes = string.split()
     for pas in sorted(passes, key=len, reverse=True):
         letters = 0
@@ -138,14 +131,12 @@ def longest_correct_pass(string):
             return len(pas)
     return -1
 
-
-assert longest_correct_pass("test 5 a0A pass007 ?xy1") == 7
-assert longest_correct_pass("1233asd --- 1as&") == -1
-
 # ------------------- Task 6 ----------------------
 
 
 def is_nested(string):
+    if not isinstance(string, str):
+        raise TypeError
     string = string.lstrip(")")
     string = string.rstrip("(")
     if 0 <= len(string) <= 3:
@@ -158,15 +149,6 @@ def is_nested(string):
     return 0
 
 
-assert is_nested("") == 0
-assert is_nested("))))") == 0
-assert is_nested("(((((") == 0
-assert is_nested("))))((((") == 0
-assert is_nested("(()") == 0
-assert is_nested("))))))))())") == 0
-assert is_nested("()))") == 0
-assert is_nested("((()") == 0
-assert is_nested("((()))") == 1
-assert is_nested("(())") == 1
-assert is_nested("(((((((())") == 1
-assert is_nested("()()()") == 1
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
