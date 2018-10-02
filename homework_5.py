@@ -4,6 +4,7 @@ import json
 import os.path
 import yaml
 
+
 def create_logger(name=__name__, format="File: %(filename)s, Func:%(funcName)s, %(levelname)s:%(message)s", **kwargs):
     """ Logger initial"""
     logging.basicConfig(format=format, **kwargs)
@@ -71,51 +72,47 @@ class JSONHandler:
 
     jsonh_logger = create_logger(filename="logs.txt", filemode="w", level=30)
 
-    @classmethod
-    def _check_file_format(cls, path):
+    def _check_file_format(self, path):
         """
         Check given file format.
 
         Raises 'TypeError' if it`s not json file
         """
         if os.path.isdir(path) or not path.endswith(".json"):
-            cls.jsonh_logger.error("TypeError: Not a json file was given")
+            self.jsonh_logger.error("TypeError: Not a json file was given")
             raise TypeError("Error! Path should lead to json file")
 
-    @classmethod
-    def _check_data_to_write(cls, data):
+    def _check_data_to_write(self, data):
         """
         Check given data on correctness before write
 
         Raises 'TypeError' if data does not match json standards
         """
         if not isinstance(data, dict):
-            cls.jsonh_logger.error("Not a dict object was given")
+            self.jsonh_logger.error("Not a dict object was given")
             raise TypeError("Data is not a dict object! Unsupported by json")
         try:
             json.dumps(data)
         except TypeError as why:
-            cls.jsonh_logger.error("TypeError: Invalid data to write: {}".format(why))
+            self.jsonh_logger.error("TypeError: Invalid data to write: {}".format(why))
             raise TypeError("Invalid data to write: {}".format(why))
 
-    @classmethod
-    def _check_path_for_read(cls, path):
+    def _check_path_for_read(self, path):
         """
         Check path before read
 
         Raises 'TypeError' if given path lead to a not json file
         Raises 'FileNotFoundError' for obvious reasons
         """
-        cls._check_file_format(path)
+        self._check_file_format(path)
         try:
             with open(path) as _:
                 pass
         except FileNotFoundError as why:
-            cls.jsonh_logger.error("FileNotFoundError: {}".format(why))
+            self.jsonh_logger.error("FileNotFoundError: {}".format(why))
             raise FileNotFoundError("{}".format(why))
 
-    @classmethod
-    def _check_data_in_file(cls, data):
+    def _check_data_in_file(self, data):
         """
         Check validity of data
 
@@ -124,12 +121,11 @@ class JSONHandler:
         try:
             json.loads(data)
         except json.decoder.JSONDecodeError as why:
-            cls.jsonh_logger.error("json.decoder.JSONDecodeError: {}".format(why))
+            self.jsonh_logger.error("json.decoder.JSONDecodeError: {}".format(why))
             raise ValueError("Not valid data in file. {}".format(why))
 
     # 2.1)
-    @classmethod
-    def write(cls, path, data, mode="w"):
+    def write(self, path, data, mode="w"):
         """
         Create the new json file on given path with json data in it
 
@@ -137,21 +133,20 @@ class JSONHandler:
         :param data: For write
         :param mode: support only: 'w', 'a', 'x' file operations with the same functional
         """
-        cls._check_file_format(path)
+        self._check_file_format(path)
         if mode not in ["w", "a", "x"]:
             raise AttributeError("Wrong kword value: {}, only: 'w', 'a', 'x' supported".format(mode))
-        cls._check_data_to_write(data)
+        self._check_data_to_write(data)
         try:
             with open(path, mode) as handle:
                 json_data = json.dumps(data)
                 handle.write(json_data)
         except PermissionError as why:
-            cls.jsonh_logger.error("Exception: {}".format(why))
+            self.jsonh_logger.error("Exception: {}".format(why))
             raise PermissionError("{}".format(why))
 
     # 2.2)
-    @classmethod
-    def read(cls, path):
+    def read(self, path):
         """
         Read data from json file
 
@@ -160,17 +155,16 @@ class JSONHandler:
          - exception occur
         :return: 'dict'.
         """
-        cls._check_path_for_read(path)
+        self._check_path_for_read(path)
         with open(path) as handle:
             data = handle.read()
             while not isinstance(data, dict):
-                cls._check_data_in_file(data)
+                self._check_data_in_file(data)
                 data = json.loads(data)
             return data
 
     # 2.3)
-    @classmethod
-    def unite_data(cls, new_file, *file_pathways):
+    def unite_data(self, new_file, *file_pathways):
         """
         Read given 'file_pathways' and write all data in 'new_file'
 
@@ -190,26 +184,24 @@ class JSONHandler:
         for path in file_pathways:
             try:
                 path = os.path.abspath(path)
-                data = cls.read(path)
+                data = self.read(path)
                 all_data[path] = data
             except Exception as ex:
                 wrong_pathways.append((path, ex))
 
-        cls.write(new_file, all_data)
+        self.write(new_file, all_data)
         return wrong_pathways
 
     # 2.4)
-    @classmethod
-    def get_relative_path(cls, path, start=None):
+    def get_relative_path(self, path, start=None):
         """ Only for json files"""
-        cls._check_file_format(path)
+        self._check_file_format(path)
         return os.path.relpath(path, start=start)
 
     # 2.5)
-    @classmethod
-    def get_abs_path(cls, filename):
+    def get_abs_path(self, filename):
         """ Only for json files"""
-        cls._check_file_format(filename)
+        self._check_file_format(filename)
         return os.path.abspath(filename)
 
 
@@ -400,28 +392,24 @@ class Time:
         return ("'{0}h:{1}m:{2}s'".format(self._time["h"], self._time["m"], self._time["s"]))
 
     def change_time(self, hours, minutes, seconds, add=True):
-        tmp_time_dict = {"h": self._value2int(hours), "m": self._value2int(minutes), "s": self._value2int(seconds)}
-
         if add:
-            new_seconds_value = tmp_time_dict["s"] + self._time["s"]
-            tmp_time_dict["m"] += new_seconds_value // 60
-
-            new_minutes_value = tmp_time_dict["m"] + self._time["m"]
-            tmp_time_dict["h"] += new_minutes_value // 60
-
-            self._time["h"] = (tmp_time_dict["h"] + self._time["h"]) % 24
-
+            tmp_time_dict = {"h": self._value2int(hours),
+                             "m": self._value2int(minutes),
+                             "s": self._value2int(seconds)}
         else:
-            new_seconds_value = self._time["s"] - tmp_time_dict["s"]
-            tmp_time_dict["m"] -= new_seconds_value // 60
+            tmp_time_dict = {"h": -self._value2int(hours),
+                             "m": -self._value2int(minutes),
+                             "s": -self._value2int(seconds)}
 
-            new_minutes_value = self._time["m"] - tmp_time_dict["m"]
-            tmp_time_dict["h"] -= new_minutes_value // 60
-
-            self._time["h"] = (self._time["h"] - tmp_time_dict["h"]) % 24
-
+        new_seconds_value = tmp_time_dict["s"] + self._time["s"]
         self._time["s"] = new_seconds_value % 60
+
+        tmp_time_dict["m"] += new_seconds_value // 60
+        new_minutes_value = tmp_time_dict["m"] + self._time["m"]
         self._time["m"] = new_minutes_value % 60
+
+        tmp_time_dict["h"] += new_minutes_value // 60
+        self._time["h"] = (tmp_time_dict["h"] + self._time["h"]) % 24
 
 
 # ------------------- Task 6 ----------------------
@@ -468,39 +456,3 @@ class Student:
             else:
                 students.update({k: v["group"]})
         return students
-
-
-# ------------------- Sandbox for 6 task ----------------------
-
-st = Student("Vasya", 1)
-st.set_mark(1, 5)
-st.set_mark(2, 4)
-st.set_mark(3, 5)
-st.set_mark(4, 5)
-st.set_mark(5, 5)
-
-st2 = Student("Petya", 2)
-st2.set_mark(1, 4)
-
-st3 = Student("Valentin", 2)
-st3.set_mark(1, 2)
-st3.set_mark(2, 3)
-
-st4 = Student("Katya", 2)
-st4.set_mark(1, 5)
-st4.set_mark(2, 5)
-st4.set_mark(3, 5)
-
-st5 = Student("Ignat", 3)
-st5.set_mark(5, 2)
-
-st6 = Student("Kurulo", 1)
-st6.set_mark(1, 5)
-st6.set_mark(2, 4)
-st6.set_mark(3, 5)
-st6.set_mark(4, 5)
-st6.set_mark(5, 1)
-
-print(Student.get_all_students())
-print(Student.get_students_by_average_mark())
-print(Student.get_excellent_students())
