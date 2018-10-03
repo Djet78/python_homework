@@ -113,7 +113,7 @@ class Main:
             mapi.load_coordinates()
             wapi = WeatherAPI(mapi.longitude, mapi.latitude)
             wapi.print_info()
-            print("    Make another response? y/n ")
+            print("    Make another request? y/n ")
             uinput = input("    Enter:")
             if uinput.upper() == "N":
                 break
